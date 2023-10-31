@@ -1,0 +1,20 @@
+
+#editor/IDE/DS_Store
+.code
+.vscode
+.idea
+.pyc
+.DS_Store
+
+
+#build/cache
+sb-mirror/*
+sb-mirror
+build/*
+build
+env/
+.cache
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
