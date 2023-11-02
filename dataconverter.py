@@ -18,7 +18,7 @@ from collections import Counter
 from itertools import repeat, chain
 import string 
 
-transcriptions_path = "./build/transcripts.json"
+transcriptions_path = "./build/transcripts-sample.json"
 tokens_path = "./build/tokens.csv"
 data_path = "./build/data.csv"
 data_max_tokens = 50
@@ -93,20 +93,19 @@ def create_token_tree_from_transcriptions(transcriptions):
         f.write("id,text\n" + content)
     return tokens
 
-def string_to_token_ids(string):
+def string_to_token_ids(string, token_dataframe):
     string = stringparser(string)
     tokens = tokenizer.tokenize(string)
-    #load tokens from file and convert string to tokens using the same tokenizer
-    string_to_token_dataframe = pd.read_csv(tokens_path)
+    
     #convert tokens to list of ids in df using the tokens in the df as a reference. If a token is not in the df, add it to the df convert it to single letter token and add it to the list of ids
     ids = []
     for token in tokens:
         #find id of the text in the df
-        id = string_to_token_dataframe[string_to_token_dataframe['text'] == token].index.values
+        id = token_dataframe[token_dataframe['text'] == token].index.values
         if id.size == 0:
             # split token into single letters and find their ids
             for char in token:
-                id = string_to_token_dataframe[string_to_token_dataframe['text'] == char].index.values
+                id = token_dataframe[token_dataframe['text'] == char].index.values
                 # if the char is not in the df, skip it
                 if id.size == 0:
                     continue
@@ -123,20 +122,21 @@ def token_ids_to_string(ids):
     return string
 
 
-def generate_dataset(transcriptions):
-    data = []
+def generate_dataset(transcriptions, token_dataframe):
     df1 = pd.read_csv(tokens_path)
+    first_write = True
     for transcript in transcriptions:
         print(f"generating dataset from transcript {transcript['video_id']}")
         for line in transcript['transcript']:
             text = line['text']
-            token_ids = string_to_token_ids(text)
+            token_ids = string_to_token_ids(text, token_dataframe)
             is_ad = 1 if line['sponsor'] else 0
-            data.append({'is_ad': is_ad, 'token_ids': token_ids})
-
-    df = pd.DataFrame(data)
-    df.to_csv(data_path, index=False, header=True)
-
+            df = pd.DataFrame([{'is_ad': is_ad, 'token_ids': token_ids}])
+            if first_write:
+                df.to_csv(data_path, index=False, header=True)
+                first_write = False
+            else:
+                df.to_csv(data_path, mode='a', index=False, header=False)
 
 def main():
     print("rading transcripts from file")
@@ -149,19 +149,22 @@ def main():
     print("tokens saved to file")
     string = "We featured at the link in the video description also down"
     print("testing tokenization on:" + string)
-    tok = string_to_token_ids(string)
+    
+    token_dataframe = pd.read_csv(tokens_path)
+    
+    tok = string_to_token_ids(string, token_dataframe)
     print(tok)
     str = token_ids_to_string(tok)
     print(str)
     #test to tokenize the alphabet and convert it back to string
     alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,?!:;\"\' "
     print(f"trying to tokenize {alphabet}")
-    tok = string_to_token_ids(alphabet)
+    tok = string_to_token_ids(alphabet, token_dataframe)
     print(tok)
     alphabet = token_ids_to_string(tok)
     print(alphabet)
     print("generating dataset")
-    generate_dataset(transcriptions)
+    generate_dataset(transcriptions, token_dataframe)
     print("done generating dataset")
     
 if __name__ == "__main__":
