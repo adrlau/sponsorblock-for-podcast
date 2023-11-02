@@ -21,9 +21,9 @@ import pandas as pd
 import json
 
 
-sponsordata_path = "./sb-mirror/sponsorTimes-sample.csv"
-videos_path = "./youtube_videos.json"
-transcriptions_path = "./transcripts.json"
+sponsordata_path = "./sb-mirror/sponsorTimes.csv"
+videos_path = "./build/youtube_videos.json"
+transcriptions_path = "./build/transcripts.json"
 
 time_threshold = 1288466965 # 2010 in unix time (seconds) to awoid very old videos
 video_duration_threshold = 61 # 1 minute in seconds to awoid yt shorts. as most podcasts are longer than 1 minute and yt shorts have a very different format than podcasts.
@@ -217,6 +217,7 @@ def main():
         # check if we already have the transcript for this video
         existing_transcript = get_transcript_from_file_by_id(id)
         if  existing_transcript != None:
+            print("Transcript for video: " + id + " already exists")
             continue
         transcript = get_transcript(id)
         if transcript == None:
@@ -224,7 +225,8 @@ def main():
         transcript = add_sponsor_tags_to_transcript(transcript, youtube_videos[0][id]['timestamps'])
         print("Saving transcript for video: " + id)
         save_transcript_to_file(transcript, id)
-    
+        #print progress
+        print(f"Currently done {video_ids.index(id) + 1} out of {len(video_ids)} videos")
     transcript = read_transcript_from_file(2)
     display_transcript(transcript)
 

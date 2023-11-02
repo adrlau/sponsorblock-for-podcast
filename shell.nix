@@ -4,12 +4,15 @@ pkgs.mkShell {
     nativeBuildInputs = with pkgs.buildPackages; [
       # openai-whisper
       # openai-whisper-cpp
-      python310Packages.openai-whisper
       # youtube-dl
       # python310Packages.youtube-dl
-      python310Packages.youtube-transcript-api
-      python310Packages.pandas
-      python310Packages.numpy
-      python310Packages.colorama
+      python3
+      python3Packages.openai-whisper
+      python3Packages.youtube-transcript-api
+      python3Packages.pandas
+      python3Packages.numpy
+      python3Packages.colorama
+      python3Packages.torch
+      python3Packages.nltk
     ];
 }
