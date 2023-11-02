@@ -9,8 +9,8 @@ pkgs.mkShell {
       python3
       python3Packages.openai-whisper
       python3Packages.youtube-transcript-api
-      python3Packages.pandas
       python3Packages.numpy
+      python3Packages.pandas
       python3Packages.colorama
       python3Packages.torch
       python3Packages.nltk

@@ -1,5 +1,5 @@
 import whisper
 
 model = whisper.load_model("base")
-result = model.transcribe("audio.wav")
+result = model.transcribe("test-audio.wav")
 print(result["text"])
