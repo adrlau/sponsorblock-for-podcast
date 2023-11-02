@@ -17,8 +17,10 @@ from nltk.tokenize import word_tokenize, sent_tokenize, TreebankWordTokenizer, W
 from collections import Counter
 from itertools import repeat, chain
 import string 
+import multiprocessing
+import concurrent.futures
 
-transcriptions_path = "./build/transcripts-sample.json"
+transcriptions_path = "./build/transcripts.json"
 tokens_path = "./build/tokens.csv"
 data_path = "./build/data.csv"
 data_max_tokens = 50
@@ -121,22 +123,27 @@ def token_ids_to_string(ids):
         string += df['text'][id] + " "
     return string
 
+def process_transcript(transcript, token_dataframe):
+    print(f"generating dataset from transcript {transcript['video_id']}")
+    for line in transcript['transcript']:
+        text = line['text']
+        token_ids = string_to_token_ids(text, token_dataframe)
+        is_ad = 1 if line['sponsor'] else 0
+        df = pd.DataFrame([{'is_ad': is_ad, 'token_ids': token_ids}])
+        df.to_csv(data_path, mode='a', index=False, header=False)
 
 def generate_dataset(transcriptions, token_dataframe):
     df1 = pd.read_csv(tokens_path)
-    first_write = True
-    for transcript in transcriptions:
-        print(f"generating dataset from transcript {transcript['video_id']}")
-        for line in transcript['transcript']:
-            text = line['text']
-            token_ids = string_to_token_ids(text, token_dataframe)
-            is_ad = 1 if line['sponsor'] else 0
-            df = pd.DataFrame([{'is_ad': is_ad, 'token_ids': token_ids}])
-            if first_write:
-                df.to_csv(data_path, index=False, header=True)
-                first_write = False
-            else:
-                df.to_csv(data_path, mode='a', index=False, header=False)
+    
+    #write header to data file
+    file = open(data_path, 'w')
+    file.write("is_ad,token_ids\n")
+    file.close()
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        futures = {executor.submit(process_transcript, transcript, token_dataframe) for transcript in transcriptions}
+        concurrent.futures.wait(futures)
+
 
 def main():
     print("rading transcripts from file")
