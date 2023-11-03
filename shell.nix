@@ -14,5 +14,10 @@ pkgs.mkShell {
       python3Packages.colorama
       python3Packages.torch
       python3Packages.nltk
+      python3Packages.asteval
+      python3Packages.scikit-learn
+      python3Packages.scipy
+      # python3Packages.scikit-learn-extra
+      python310Packages.seaborn
     ];
 }
