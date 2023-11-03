@@ -16,10 +16,15 @@ from torch import nn
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, Dataset
 
+# Check if GPU is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+print(device)
+
 class MyDataset(Dataset):
     def __init__(self, X, y):
-        self.X = [torch.tensor(x) for x in X]
-        self.y = torch.tensor(y)
+        self.X = [x.to(device) for x in X]
+        self.y = y.to(device)
 
     def __getitem__(self, i):
         return self.X[i], self.y[i]
@@ -58,7 +63,8 @@ class MyModel(nn.Module):
         x = self.fc(x[:, -1, :])
         return torch.sigmoid(x)
 
-model = MyModel()
+# Move model to the device
+model = MyModel().to(device)
 
 # Define loss and optimizer
 criterion = nn.BCELoss()
@@ -68,6 +74,7 @@ optimizer = torch.optim.Adam(model.parameters())
 for epoch in range(10):
     print(f"epoch {epoch}")
     for X_batch, y_batch in dataloader:
+        X_batch, y_batch = X_batch.to(device), y_batch.to(device)
         optimizer.zero_grad()
         y_pred = model(X_batch).squeeze()
         loss = criterion(y_pred, y_batch.float())
