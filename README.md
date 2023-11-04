@@ -17,6 +17,9 @@ This projects dependencies are managed using [nix](https://nixos.org/download#ni
 
 After installing and setting up nix with nixpackages, a development shell withneeded dependencies can be created by running ``ǹix-shell`` in this directory. or by pointing to shell.nix as an argument. 
 
+The first time this is run it will download and build all dependencies requred to develop and run the application. It migth take a while the first, because it will build rocm and torch with rocm support from source, but it will be cached in the nix store for further shells, until it is purged.
+
+
 
 
 

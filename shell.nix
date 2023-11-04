@@ -12,8 +12,8 @@ pkgs.mkShell {
       python3Packages.numpy
       python3Packages.pandas
       python3Packages.colorama
-      # python3Packages.torch
-      python310Packages.torchWithRocm
+      python3Packages.torch
+      # python310Packages.torchWithRocm
       python3Packages.nltk
       python3Packages.asteval
       python3Packages.scikit-learn
@@ -25,4 +25,7 @@ pkgs.mkShell {
       rocminfo
       rocm-smi
     ];
+  shellHook = ''
+    export HSA_OVERRIDE_GFX_VERSION=10.3.0
+  '';
 }

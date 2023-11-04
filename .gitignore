@@ -12,6 +12,8 @@ sb-mirror/*
 sb-mirror
 build/*
 build
+data/*
+data
 env/
 .cache
 
