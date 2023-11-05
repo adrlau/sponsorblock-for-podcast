@@ -2,10 +2,7 @@
 pkgs.mkShell {
     # nativeBuildInputs is usually what you want -- tools you need to run
     nativeBuildInputs = with pkgs.buildPackages; [
-      # openai-whisper
-      # openai-whisper-cpp
-      # youtube-dl
-      # python310Packages.youtube-dl
+      openai-whisper
       python3
       python3Packages.openai-whisper
       python3Packages.youtube-transcript-api
@@ -18,7 +15,6 @@ pkgs.mkShell {
       python3Packages.asteval
       python3Packages.scikit-learn
       python3Packages.scipy
-      # python3Packages.scikit-learn-extra
       python310Packages.seaborn
       rocm-core
       rocm-runtime
