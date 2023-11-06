@@ -19,7 +19,7 @@ import trainer2
 import dataconverter2
 nltk.download('wordnet')
 
-
+threshold = 0.9
 
 def get_input(test=False):
     #get input from user
@@ -46,9 +46,35 @@ def get_input(test=False):
 def main():
     inp = get_input()
     text = dataconverter2.string_to_token_ids(inp)
+    #create a copy but move the first dataconverter2.data_max_tokens/2 tokens to the end of the list
+    text2 = text[dataconverter2.data_max_tokens//2:] + text[:dataconverter2.data_max_tokens//2]
     text = dataconverter2.normalize_token_length(text)
+    text2 = dataconverter2.normalize_token_length(text2)
     ad = trainer2.predict(text)
+    ad2 = trainer2.predict(text2)
     print(f"Ad: {ad}")
+    print(f"Ad2: {ad2}")
+    
+    #number of token lists to compare
+    n = len(text)
+    for i in range(n):
+        
+        # make sure the token is not mostly padding as this will mess up the evaluation
+        num_zero = 0
+        for token in text[i]:
+            if token == 0:
+                num_zero += 1
+        
+        if ad[i] > threshold and ad2[i] > threshold and num_zero < dataconverter2.data_max_tokens//2:
+            #convert token ids to text
+            str = dataconverter2.token_ids_to_string(text[i])
+            # print the text in red
+            print(f"\033[91m{str}\033[00m")
+        else:
+            #convert token ids to text
+            str = dataconverter2.token_ids_to_string(text[i])
+            # print the text in white
+            print(f"\033[00m{str}\033[00m")    
     
 if __name__ == "__main__":
     main()
