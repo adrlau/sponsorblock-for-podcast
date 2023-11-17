@@ -53,8 +53,6 @@ def preprocess_text(text):
     text = tprep.replace.urls(text)
     text = tprep.replace.user_handles(text)
     text = tprep.remove.punctuation(text)
-    text = tprep.remove.digits(text) #  untested
-    text = tprep.remove.stopwords(text) #  untested
     text = tprep.normalize.whitespace(text)
     
     #remove double spaces

@@ -50,10 +50,28 @@ def main():
     text2 = text[dataconverter2.data_max_tokens//2:] + text[:dataconverter2.data_max_tokens//2]
     text = dataconverter2.normalize_token_length(text)
     text2 = dataconverter2.normalize_token_length(text2)
+    print("predicting")
     ad = trainer2.predict(text)
     ad2 = trainer2.predict(text2)
     print(f"Ad: {ad}")
     print(f"Ad2: {ad2}")
+    #get the string of the token that is the most likely to be an ad in the text
+    mostad = dataconverter2.token_ids_to_string(text[ad.index(max(ad))])
+    mostad_post = dataconverter2.token_ids_to_string(text[ad.index(max(ad))+1])
+    mostad_pre = dataconverter2.token_ids_to_string(text[ad.index(max(ad))-1])
+    print(f"most likely ad: {mostad_pre} \r\n {mostad} \r\n {mostad_post} \r\n\n")
+    
+    #get the string of the token that is the second most likely to be an ad in the text
+    secondmostad = dataconverter2.token_ids_to_string(text[ad.index(sorted(ad)[-3])])
+    secondmostad_post = dataconverter2.token_ids_to_string(text[ad.index(sorted(ad)[-3])+1])
+    secondmostad_pre = dataconverter2.token_ids_to_string(text[ad.index(sorted(ad)[-2])-1])
+    print(f"second most likely ad: {secondmostad_pre} \r\n {secondmostad} \r\n {secondmostad_post} \r\n\n")
+    
+    #get the string of the token that is the most likely to not be an ad in the text
+    leastad = dataconverter2.token_ids_to_string(text[ad.index(min(ad))])
+    leastad_post = dataconverter2.token_ids_to_string(text[ad.index(min(ad))+1])
+    leastad_pre = dataconverter2.token_ids_to_string(text[ad.index(min(ad))-1])
+    print(f"least likely ad: {leastad_pre} \r\n {leastad} \r\n {leastad_post} \r\n\n")
     
     #number of token lists to compare
     n = len(text)
