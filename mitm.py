@@ -6,6 +6,8 @@ import wave
 import whisper
 import dataconverter2
 import evaluater
+from pydub import AudioSegment
+
 model = whisper.load_model("base")
 
 def transcribe_audio(filename):
@@ -17,12 +19,10 @@ def filter_ads(audiofile):
     segments = None
     text = None
     try:
-        transcript = transcribe_audio(audiofile)
-        segments = transcript["segments"]
-        text = transcript["text"]
-        ctx.log.warn( "Transcript: {}".format( transcript.__dir__ ) )
+        audio = AudioSegment.from_file(".tmp/" + filename + "." + audio_format, format=audio_format)    
+        ctx.log.warn("Audio file loaded")
     except Exception as e:
-        ctx.log.warn( "Transcript failed: {}".format( e ) )
+        ctx.log.warn("Audio file could not be played, exception: {}".format(e))
         return
     #save the transcript to a file
     file = open( audiofile + ".transcript.txt", 'w' )
@@ -42,9 +42,9 @@ def filter_ads(audiofile):
     
 
 #TODO: rewrite this to not be blatant copy pasta from https://www.cron.dk/grabbing-media-with-mitmproxy/
-class CybraryGrabber:
+class MITMGrabber:
     def __init__(self):
-        ctx.log.warn( "CybraryGrabber class initiated" )
+        ctx.log.warn( "Starting" )
         self.processed_file = None
 
     def writefile(self, filename, content):
@@ -56,6 +56,7 @@ class CybraryGrabber:
 
     def response(self, flow):
         url = flow.request.path
+        # ctx.log.warn( "URL: {}".format( url ) )
         #regex to check if the url is a audio file url. mp3, wav, ogg, etc. or contains the word audio
         is_audio = re.search( '.mp3|.wav|.ogg', url )
         if is_audio:
@@ -100,6 +101,6 @@ class CybraryGrabber:
         
 
 addons = [
-    CybraryGrabber()
+    MITMGrabber()
 ]
 

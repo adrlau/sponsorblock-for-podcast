@@ -54,7 +54,7 @@ evaluator.py can be used to evaluate the trained model on some texts.  if you wa
 
 # How to run
 
-For final project with premade weigths, just running the following script and pointing your internet trafick to localhost:8080
+For final project with premade weigths, just running the following script and pointing your internet trafick to localhost:8090
 
     start-proxy.sh
 

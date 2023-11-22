@@ -6,6 +6,7 @@ pkgs.mkShell {
       python310
       python310Packages.openai-whisper
       python310Packages.pyaudio
+      python310Packages.pydub
       python310Packages.youtube-transcript-api
       python310Packages.numpy
       python310Packages.mitmproxy
