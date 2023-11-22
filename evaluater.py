@@ -43,23 +43,13 @@ def get_input(test=False):
         print(f"Got string: {inp[:100]}...")
         return inp
 
-def is_ad_text(text):
-    #convert text to token ids
-    text = dataconverter2.string_to_token_ids(text)
-    #predict if the text is an ad
-    ad = trainer2.predict(text)
-    #if the text is an ad, return true
-    if ad[0] > threshold:
-        return True
-    else:
-        return False
-
 def is_ad_tokens(tokens):
     tokens = dataconverter2.normalize_token_length(tokens)
     #predict if the text is an ad
     ad = trainer2.predict(tokens)
-    
-    #return the ad values for each token instead of just the first one
+    #convert ad to a list of booleans where true means the token is an ad and false means it is not
+    ad = [x > threshold for x in ad]
+    return ad, tokens
     
 
 def main():

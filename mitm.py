@@ -13,8 +13,29 @@ def transcribe_audio(filename):
     return result
 
 def filter_ads(audiofile):
-    transcript = transcribe_audio(audiofile)
-    ctx.log.warn( "Transcript: {}".format( transcript.__dir__ ) )
+    transcript = None
+    segments = None
+    text = None
+    try:
+        transcript = transcribe_audio(audiofile)
+        segments = transcript["segments"]
+        text = transcript["text"]
+        ctx.log.warn( "Transcript: {}".format( transcript.__dir__ ) )
+    except Exception as e:
+        ctx.log.warn( "Transcript failed: {}".format( e ) )
+        return
+    #save the transcript to a file
+    file = open( audiofile + ".transcript.txt", 'w' )
+    file.write( segments )
+    
+    # evaluate the transcript text
+    tokens = dataconverter2.string_to_token_ids( text )
+    ad, normalized_tokens = evaluater.is_ad_tokens( tokens )
+    
+    #get all teh items in the normalized_tokens list that are ads
+    
+    
+    
     #tokenize the transcript
     return "test-audio.wav"
     
@@ -56,36 +77,25 @@ class CybraryGrabber:
                 
             #hash the url to get a unique filename
             filename = str( hash( url ) )
-            
             #create .tmp folder if it does not exist
             if not os.path.exists( ".tmp" ):
                 os.makedirs( ".tmp" )
             self.writefile( ".tmp/" + filename + "." + audio_format, flow.response.content )
             
+            
             #make sure the file is a valid audio file using pyaudio
             try:
                 p = pyaudio.PyAudio()
                 wf = wave.open( ".tmp/" + filename + "." + audio_format, 'rb' )
-                #open the audio file in pyaudio
-                stream = p.open( format=p.get_format_from_width( wf.getsampwidth() ),
-                                 channels=wf.getnchannels(),
-                                 rate=wf.getframerate(),
-                                 output=True )
-                
-                
             except Exception as e:
                 ctx.log.warn( "Audio file could not be played, exception: {}".format( e ) )
-                #remove the file
-                os.remove( ".tmp/" + filename + "." + audio_format )
-                # return
+                # os.remove( ".tmp/" + filename + "." + audio_format )
+                return
             
             # filter_ads( ".tmp/" + filename + "." + audio_format )
             filter_ads( ".tmp/" + filename + "." + audio_format )
             processed_content = open( ".tmp/" + filename + "." + audio_format, 'rb' ).read()
             flow.response.content = processed_content
-            
-            #cleanup
-            # os.remove( ".tmp/" + filename + "." + audio_format )
     
         
 
