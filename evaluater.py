@@ -19,7 +19,7 @@ import trainer2
 import dataconverter2
 nltk.download('wordnet')
 
-threshold = 0.9
+threshold = 0.6
 
 def get_input(test=False):
     #get input from user
@@ -42,6 +42,25 @@ def get_input(test=False):
     else:
         print(f"Got string: {inp[:100]}...")
         return inp
+
+def is_ad_text(text):
+    #convert text to token ids
+    text = dataconverter2.string_to_token_ids(text)
+    #predict if the text is an ad
+    ad = trainer2.predict(text)
+    #if the text is an ad, return true
+    if ad[0] > threshold:
+        return True
+    else:
+        return False
+
+def is_ad_tokens(tokens):
+    tokens = dataconverter2.normalize_token_length(tokens)
+    #predict if the text is an ad
+    ad = trainer2.predict(tokens)
+    
+    #return the ad values for each token instead of just the first one
+    
 
 def main():
     inp = get_input()

@@ -5,8 +5,10 @@ pkgs.mkShell {
       openai-whisper
       python310
       python310Packages.openai-whisper
+      python310Packages.pyaudio
       python310Packages.youtube-transcript-api
       python310Packages.numpy
+      python310Packages.mitmproxy
       python310Packages.pandas
       python310Packages.colorama
       python310Packages.torch

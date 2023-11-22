@@ -26,7 +26,7 @@ transcriptions_path = "./build/transcripts.json"
 tokens_path = "./build/tokens.csv"
 data_path = "./build/data.csv"
 ad_keywords_path = "./blocklist.txt" #added to force in a blocklist with specially bad or triggering words in the dataset.
-data_max_tokens = 16
+data_max_tokens = 32
 tokenizer = TreebankWordTokenizer()
 lemmatizer = WordNetLemmatizer()
 
