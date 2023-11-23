@@ -17,9 +17,13 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, Dataset
 import trainer2
 import dataconverter2
+from pydub import AudioSegment
+import whisper
+
+model = whisper.load_model("tiny.en")
 nltk.download('wordnet')
 
-threshold = 0.6
+threshold = 0.44
 
 def get_input(test=False):
     #get input from user
@@ -47,10 +51,52 @@ def is_ad_tokens(tokens):
     tokens = dataconverter2.normalize_token_length(tokens)
     #predict if the text is an ad
     ad = trainer2.predict(tokens)
+    ad_temp = ad.copy()
     #convert ad to a list of booleans where true means the token is an ad and false means it is not
     ad = [x > threshold for x in ad]
-    return ad, tokens
+    return ad, tokens, ad_temp
+
+
+def transcribe_audio(filename):
+        result = model.transcribe(filename)
+        return result # result["text"] is plaintext transcript result["segments"] is a list of segments with start and end time and text
+
+def filter_ads(audiofile):
+    # return ".tmp/test-audio.wav"
+    audio_format = audiofile.split(".")[-1]
+    transcript = transcribe_audio(audiofile)
+    segments = transcript["segments"]
+    text = transcript["text"]
+    tokens = dataconverter2.string_to_token_ids(text)
+    ad, normalized_tokens, estimates = is_ad_tokens(tokens)
+    #save transcript to file
+    filename = audiofile + ".transcript.txt"
+    file = open(filename, 'w')
+    file.write(text)
+    # filename = audiofile + ".transcript.pickle"
+    # file = open(filename, 'wb')
+    # import pickle
+    # pickle.dump(transcript, file)
     
+    audio_time_length = AudioSegment.from_file(audiofile).duration_seconds
+    segment_length = audio_time_length / len(ad)
+    
+    for i in range(len(ad)):
+        a = ad[i]
+        ctx.log.warn("ad at index {}: {}".format(i, a))
+        if a:
+            # remove part from audio
+            start = i * segment_length
+            end = start + segment_length
+            audio = AudioSegment.from_file(audiofile)
+            audio = audio[:int(start*1000)] + audio[int(end*1000):]
+            audio.export(audiofile, format=audio_format)
+    
+    output_file = audiofile + ".filtered." + audio_format + ".wav"
+    audio = AudioSegment.from_file(audiofile)
+    audio.export(output_file, format="wav")
+    return output_file
+
 
 def main():
     inp = get_input()

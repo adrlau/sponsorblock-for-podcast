@@ -6,99 +6,90 @@ import wave
 import whisper
 import dataconverter2
 import evaluater
+import pydub
 from pydub import AudioSegment
+import threading
+import asyncio
+from mitmproxy.script import concurrent
 
-model = whisper.load_model("base")
 
-def transcribe_audio(filename):
-    result = model.transcribe(filename)
-    return result
-
-def filter_ads(audiofile):
-    transcript = None
-    segments = None
-    text = None
-    try:
-        audio = AudioSegment.from_file(".tmp/" + filename + "." + audio_format, format=audio_format)    
-        ctx.log.warn("Audio file loaded")
-    except Exception as e:
-        ctx.log.warn("Audio file could not be played, exception: {}".format(e))
-        return
-    #save the transcript to a file
-    file = open( audiofile + ".transcript.txt", 'w' )
-    file.write( segments )
-    
-    # evaluate the transcript text
-    tokens = dataconverter2.string_to_token_ids( text )
-    ad, normalized_tokens = evaluater.is_ad_tokens( tokens )
-    
-    #get all teh items in the normalized_tokens list that are ads
-    
-    
-    
-    #tokenize the transcript
-    return "test-audio.wav"
-    
-    
-
-#TODO: rewrite this to not be blatant copy pasta from https://www.cron.dk/grabbing-media-with-mitmproxy/
+model = whisper.load_model("tiny.en")
 class MITMGrabber:
     def __init__(self):
         ctx.log.warn( "Starting" )
         self.processed_file = None
 
+    def transcribe_audio(self, filename):
+        result = model.transcribe(filename)
+        return result # result["text"] is plaintext transcript result["segments"] is a list of segments with start and end time and text
+
+    def filter_ads(self, audiofile):
+        # return ".tmp/test-audio.wav"
+        audio_format = audiofile.split(".")[-1]
+        transcript = self.transcribe_audio(audiofile)
+        segments = transcript["segments"]
+        text = transcript["text"]
+        tokens = dataconverter2.string_to_token_ids(text)
+        ad, normalized_tokens, estimates = evaluater.is_ad_tokens(tokens)
+        ctx.log.warn("ad: {}".format(ad))
+        #save transcript to file
+        filename = audiofile + ".transcript.txt"
+        file = open(filename, 'w')
+        file.write(text)
+        
+        audio_time_length = AudioSegment.from_file(audiofile).duration_seconds
+        segment_length = audio_time_length / len(ad)
+        
+        for i in range(len(ad)):
+            a = ad[i]
+            ctx.log.warn("ad at index {}: {}".format(i, a))
+            if a:
+                # remove part from audio
+                start = i * segment_length
+                end = start + segment_length
+                
+                ctx.log.warn("start: {}, end: {}".format(start, end))
+                audio = AudioSegment.from_file(audiofile)
+                audio = audio[:int(start*1000)] + audio[int(end*1000):]
+                audio.export(audiofile, format=audio_format)
+        
+        
+        output_file = audiofile + ".filtered." + audio_format + ".wav"
+        audio = AudioSegment.from_file(audiofile)
+        audio.export(output_file, format="wav")
+        return output_file
+        
     def writefile(self, filename, content):
-        ctx.log.warn( "Writing File: {}".format( filename ) )
-        # print( "Writing File: {}".format( filename ) )
-        with open( filename, "wb" ) as f:
+        if not os.path.exists( ".tmp" ):
+            os.makedirs( ".tmp" )
+        with open(filename, "wb" ) as f:
             f.write( content )
         f.close()
 
-    def response(self, flow):
-        url = flow.request.path
-        # ctx.log.warn( "URL: {}".format( url ) )
-        #regex to check if the url is a audio file url. mp3, wav, ogg, etc. or contains the word audio
-        is_audio = re.search( '.mp3|.wav|.ogg', url )
-        if is_audio:
-            ctx.log.warn( "Audio: {}".format( url ) )
-            #get audop format
-            audio_format = url.split('.')[-1]
-            #make sure the audio format contains a valid file extension
-            if "mp3" in audio_format.lower():
-                audio_format = 'mp3'
-            elif "wav" in audio_format.lower():
-                audio_format = 'wav'
-            elif "ogg" in audio_format.lower():
-                audio_format = 'ogg'
-            else:
-                ctx.log.warn( "Audio format not supported: {}".format( audio_format ) )
-                audio_format = ''
-                return
+    async def response(self, flow):
+        # def process_response(self):
+            url = flow.request.path
+            
+            content_type = flow.response.headers.get("Content-Type", "")
+            
+            is_audio = re.search('audio|mpeg|mp3|wav|ogg', content_type, re.IGNORECASE)
+            if is_audio:
+                ctx.log.warn("Audio: {}".format(url))
+                audio_format = re.search('mpeg|mp3|wav|ogg', content_type, re.IGNORECASE).group(0)
+                filename = str(hash(url))
+                filename = ".tmp/" + filename + "." + audio_format
+                self.writefile(filename, flow.response.content)
                 
-                
-            #hash the url to get a unique filename
-            filename = str( hash( url ) )
-            #create .tmp folder if it does not exist
-            if not os.path.exists( ".tmp" ):
-                os.makedirs( ".tmp" )
-            self.writefile( ".tmp/" + filename + "." + audio_format, flow.response.content )
-            
-            
-            #make sure the file is a valid audio file using pyaudio
-            try:
-                p = pyaudio.PyAudio()
-                wf = wave.open( ".tmp/" + filename + "." + audio_format, 'rb' )
-            except Exception as e:
-                ctx.log.warn( "Audio file could not be played, exception: {}".format( e ) )
-                # os.remove( ".tmp/" + filename + "." + audio_format )
-                return
-            
-            # filter_ads( ".tmp/" + filename + "." + audio_format )
-            filter_ads( ".tmp/" + filename + "." + audio_format )
-            processed_content = open( ".tmp/" + filename + "." + audio_format, 'rb' ).read()
-            flow.response.content = processed_content
-    
-        
+                ctx.log.warn("Audio file loaded filtering ads")
+                try:
+                    filename = self.filter_ads(filename)
+                    processed_content = open(filename, 'rb').read()
+                    flow.response.content = processed_content
+                except Exception as e:
+                    ctx.log.warn("Audio file could not be filtered, exception: {}".format(e))
+                    return
+        # thread = threading.Thread(target=process_response, args=(self,))
+        # thread.start()
 
 addons = [
     MITMGrabber()

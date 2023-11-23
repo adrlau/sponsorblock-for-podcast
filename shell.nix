@@ -3,6 +3,7 @@ pkgs.mkShell {
     # nativeBuildInputs is usually what you want -- tools you need to run
     nativeBuildInputs = with pkgs.buildPackages; [
       openai-whisper
+      ffmpeg
       python310
       python310Packages.openai-whisper
       python310Packages.pyaudio

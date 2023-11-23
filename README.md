@@ -58,6 +58,10 @@ For final project with premade weigths, just running the following script and po
 
     start-proxy.sh
 
+This will intercept all requests with audio, wait until it is loaded, transcribe and filter it before passing the filtered file onwards. 
+Transcribing alone takes enough time and resources to timeout a lot of stuff so consider this feature a work in progress. 
+I used this site for simple testing on audio files https://www.cbvoiceovers.com/audio-samples/.
+and also on a regular podcast i listen to https://darknetdiaries.com/episode/138/ but this is to long to respond within reasonable time and times out, but you should be able to get the filtered file in the .tmp folder that gets generated.
 
 # further work.
 
@@ -66,3 +70,5 @@ To begin with it is obvious that the current model has not gotten enough informa
 The machiune learning aspect, probably could have use of a larger model with more data, and a better structured input where previous inputs ahve more to say in the current estimate except for in the current chunk. Also i could need a improved tokenization and cleanup by utilizing something like spacy so that i do not need to keep a file with token information.
 Also the detected adspot to timestamp for removal could be implemented in a better way than just assuming tokens and text are aproximately equally distributed in time.
 Evaluation improvements could also be made with utilizing a hashmap in all stages of tokenization instead of only creation, to awoid file seeking.
+Evaluation on parts as a stream of audio segments instead of only evaluating the whole.
+Classic ad blocking based on ip or location for the same file/site.
