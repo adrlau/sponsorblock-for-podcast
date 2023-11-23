@@ -1,21 +1,14 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F
-
-
-import torch.nn as nn
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-import nltk
+from torch.utils.data import Dataset, DataLoader
+from sklearn.model_selection import train_test_split
 import spacy
 import pandas as pd
-import dataconverter3
 
-
-weights_path = "./build/weigths.pth"
+# Define the path to your data
 data_path = "./build/data3.csv"
 
-# load data of the form: is_ad,text (text is a arbitrary length string)
+# Load and preprocess your data
 print("loading data")
 data = pd.read_csv(data_path)
 
@@ -41,48 +34,56 @@ print("concatenating data")
 train = pd.concat([train_ad, train_not_ad])
 test = pd.concat([test_ad, test_not_ad])
 
-
-
-import spacy
-import multiprocessing
+# Initialize spacy 'en' model
 nlp = spacy.load("en_core_web_sm")
 
 def tokenize_text(text):
-    temp = [token.text for token in nlp(text)]
-    print(temp[:10])
-    return temp
+    return [token.text for token in nlp(text)]
 
-# Create a pool of processes
-pool = multiprocessing.Pool()
+# Tokenize the text
+import concurrent.futures
 
-# Apply tokenization function to each text in parallel
+def tokenize_df(df):
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        df['text'] = list(executor.map(tokenize_text, df['text']))
+    return df
+
 print("Tokenizing text")
-train['text'] = pool.map(tokenize_text, train['text'])
-test['text'] = pool.map(tokenize_text, test['text'])
-pool.close()
-pool.join()
+train = tokenize_df(train)
+test = tokenize_df(test)
+print(f"sample text: {train.iloc[0]['text']}")
 
-print(train.head(10))
+#create a vocabulary using spacy 
+print("creating vocabulary")
+from collections import Counter
+word_counts = Counter()
+for text in train['text']:
+    word_counts.update(text)
+for text in test['text']:
+    word_counts.update(text)
+print(f"number of words: {len(word_counts)}")
+vocab = sorted(word_counts, key=word_counts.get, reverse=True)
+vocab_to_int = {word: ii for ii, word in enumerate(vocab, 1)}
+
+
+class TextDataset(Dataset):
+    def __init__(self, dataframe):
+        self.dataframe = dataframe
+
+    def __len__(self):
+        return len(self.dataframe)
+
+    def __getitem__(self, idx):
+        text = self.dataframe.iloc[idx]['text']
+        label = self.dataframe.iloc[idx]['is_ad']
+        return text, label
+
+# Create DataLoaders
+train_dataset = TextDataset(train)
+test_dataset = TextDataset(test)
+
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 
 
-class LSTM(nn.Module):
-    def __init__(self, dimension=128):
-        super(LSTM, self).__init__()
-        self.dimension = dimension
-        self.lstm = nn.LSTM(input_size=300,
-                            hidden_size=dimension,
-                            num_layers=1,
-                            batch_first=True,
-                            bidirectional=True)
-        self.drop = nn.Dropout(0.5)
-        self.fc = nn.Linear(dimension*2, 1)
-        
-    def forward(self, x, len):
-        x = pack_padded_sequence(x, len, batch_first=True, enforce_sorted=False)
-        x, (h, c) = self.lstm(x)
-        x, _ = pad_packed_sequence(x, batch_first=True)
-        x = self.drop(x)
-        x = self.fc(x)
-        return x
-    

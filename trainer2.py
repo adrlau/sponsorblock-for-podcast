@@ -12,8 +12,8 @@ weights_path = "./build/weigths.pth"
 data_path = "./build/data.csv"
 feature_size = dataconverter2.data_max_tokens #number of tokens in each sample of data currently 16
 batch_size = 32
-epochs = 50
-lr = 0.005
+epochs = 10
+lr = 0.05
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(15856726355239440931)
 #print torch seed
@@ -57,12 +57,27 @@ class Classificator(nn.Module):
         x = self.act2(self.layer2(x))
         x = self.act3(self.layer3(x))
         x = self.sigmoid(self.output(x))
-        return x    
-    
+        return x
+
+class LSTM(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # size = 128
+        size = 3 #number of lstm cells
+        self.lstm = nn.LSTM(feature_size, size, batch_first=True)
+        self.dense = nn.Linear(size, 1)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        x, _ = self.lstm(x.unsqueeze(1))  # Add an extra dimension for batch
+        x = x.squeeze(1)  # Remove the extra dimension
+        x = self.sigmoid(self.dense(x))
+        return x
 
 def model_train(model, X_train, y_train, X_test, y_test):
     # loss function and optimizer
-    loss_fn = nn.BCELoss()  # binary cross entropy
+    # loss_fn = nn.BCELoss()  # binary cross entropy
+    loss_fn = nn.BCEWithLogitsLoss() #needed for lstm model
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     
     batch_start = torch.arange(0, len(X_train), batch_size)
@@ -99,6 +114,17 @@ def model_train(model, X_train, y_train, X_test, y_test):
             if acc > best_acc:
                 best_acc = acc
                 best_weights = copy.deepcopy(model.state_dict())
+            # from sklearn.metrics import precision_score, recall_score, f1_score
+
+            # # Convert tensors to numpy arrays for sklearn metrics
+            # y_pred_np = y_pred.round().detach().numpy()
+            # y_test_np = y_test.detach().numpy()
+
+            # precision = precision_score(y_test_np, y_pred_np)
+            # recall = recall_score(y_test_np, y_pred_np)
+            # f1 = f1_score(y_test_np, y_pred_np)
+
+            # print(f"Precision: {precision}, Recall: {recall}, F1-score: {f1}")
         print(f"Loss: {float(loss)}, Accuracy: {float(acc)}")
         
     #save weigths
@@ -106,8 +132,6 @@ def model_train(model, X_train, y_train, X_test, y_test):
     torch.save(best_weights, weights_path)
 
 def predict(inp):
-    # Load model with weights from file
-    model = Classificator().to(device)
     model.load_state_dict(torch.load(weights_path))
     model.eval()  # Set the model to evaluation mode
     
@@ -121,9 +145,12 @@ def predict(inp):
     output = [round(x[0], 4) for x in output]
     return output
 
+
+# Load model with weights from file
+# model = Classificator().to(device)
+model = LSTM().to(device)
 if __name__ == "__main__":
     X,y,Xe,ye = get_data()
-    model = Classificator().to(device)
     print(f" parameters:{sum([x.reshape(-1).shape[0] for x in model.parameters()])}") 
     model_train(model,X,y, Xe, ye)
     test = dataconverter2.string_to_token_ids("This is a test. Is there an advert in here? I really like dogs. This is a message from our sponsor")

@@ -8,6 +8,8 @@
 
 
 #build/cache
+.tmp/*
+.tmp
 sb-mirror/*
 sb-mirror
 build/*
